@@ -139,6 +139,40 @@ class TrendingFetcherService:
         return []
 
     @staticmethod
+    async def _fetch_toutiao_trending(limit: int) -> List[Dict]:
+        """获取头条热搜"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://www.toutiao.com/hot-event/hot-board/?origin=hot_board",
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json, text/plain, */*",
+                        "Referer": "https://www.toutiao.com/",
+                    }
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    items = data.get("data", []) or data.get("hot_list", [])
+                    topics = []
+                    for i, item in enumerate(items[:limit]):
+                        title = item.get("Title", "") or item.get("word", "") or item.get("title", "")
+                        if title:
+                            topics.append({
+                                "rank": i + 1,
+                                "title": title,
+                                "source": "toutiao",
+                                "hot_value": str(item.get("HotValue", item.get("hot_value", ""))),
+                                "url": item.get("Url", "") or f"https://so.toutiao.com/search?keyword={title}",
+                                "category": TrendingFetcherService._infer_category(title),
+                            })
+                    if topics:
+                        return topics
+        except Exception as e:
+            print(f"[_fetch_toutiao_trending] Failed: {e}")
+        return []
+
+    @staticmethod
     async def _search_toutiao_news(keyword: str, limit: int = 5) -> List[Dict]:
         """今日头条新闻搜索"""
         try:
@@ -208,8 +242,81 @@ class TrendingFetcherService:
 
     @staticmethod
     async def _fetch_baidu_trending(limit: int, category: str = "all") -> List[Dict]:
-        """获取百度热搜 - 百度页面为 JS 渲染无法直接爬取，改用微博热搜（质量更高）"""
-        return await TrendingFetcherService._fetch_weibo_trending(limit, category)
+        """获取百度热搜 - 尝试多种方式获取"""
+        # 方式1：尝试百度热搜官方 API（PC 端接口）
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://top.baidu.com/api.php",
+                    params={"url": "top.baidu.com/board?tab=realtime", "node": "-entry"},
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json, text/plain, */*",
+                        "Referer": "https://top.baidu.com/board?tab=realtime",
+                    }
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    items = data.get("data", []) or []
+                    topics = []
+                    for i, item in enumerate(items[:limit]):
+                        topics.append({
+                            "rank": i + 1,
+                            "title": item.get("query", ""),
+                            "source": "baidu",
+                            "hot_value": str(item.get("hotScore", "")),
+                            "url": item.get("rawUrl", "") or f"https://top.baidu.com/board?tab=realtime",
+                            "category": TrendingFetcherService._infer_category(item.get("query", "")),
+                        })
+                    if topics:
+                        return topics
+        except Exception as e:
+            print(f"[_fetch_baidu_trending] API方式1失败: {e}")
+
+        # 方式2：尝试百度热搜备用接口
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://top.baidu.com/board?tab=realtime",
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        "Accept-Language": "zh-CN,zh;q=0.9",
+                    }
+                )
+                if resp.status_code == 200:
+                    # 从 HTML 中提取热搜数据（百度有时会内嵌 JSON 数据）
+                    html = resp.text
+                    import re as _re
+                    # 匹配 window.__INITIAL_STATE__ 或 JSON 数据块
+                    json_match = _re.search(r'"query":"([^"]+)","index":(\d+)', html)
+                    if json_match:
+                        # 提取所有热搜词
+                        all_matches = _re.findall(r'"query":"([^"]+)","index":(\d+)', html)
+                        topics = []
+                        for i, (title, idx) in enumerate(all_matches[:limit]):
+                            topics.append({
+                                "rank": i + 1,
+                                "title": title,
+                                "source": "baidu",
+                                "hot_value": "",
+                                "url": f"https://www.baidu.com/s?wd={title}",
+                                "category": TrendingFetcherService._infer_category(title),
+                            })
+                        if topics:
+                            return topics
+        except Exception as e:
+            print(f"[_fetch_baidu_trending] API方式2失败: {e}")
+
+        # 方式3：尝试知乎/头条热搜作为备选
+        try:
+            topics = await TrendingFetcherService._fetch_toutiao_trending(limit)
+            if topics:
+                return topics
+        except Exception as e:
+            print(f"[_fetch_baidu_trending] 头条热搜失败: {e}")
+
+        return TrendingFetcherService._get_default_topics(category)
 
     @staticmethod
     async def _fetch_weibo_trending(limit: int, category: str = "all") -> List[Dict]:

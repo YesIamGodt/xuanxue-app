@@ -244,6 +244,21 @@ def get_profile():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/profile/logout")
+def logout_profile():
+    """退出登录，清除服务端用户数据"""
+    try:
+        import os
+        profile_file = os.path.join(os.path.dirname(__file__), "data", "user_profile.json")
+        if os.path.exists(profile_file):
+            os.remove(profile_file)
+        # 重置全局画像
+        from services.metaphysics import _current_profile, UserProfile
+        _current_profile.__init__()
+        return {"success": True, "message": "已退出登录"}
+    except Exception as e:
+        return {"success": True, "message": "已退出"}
+
 
 # 热点话题API
 @app.get("/api/trending")
@@ -270,6 +285,78 @@ def get_trending_categories():
         return {"success": True, "categories": TrendingFetcherService.get_categories()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/trending/direct")
+async def get_trending_direct():
+    """直接代理热点API，从后端转发第三方数据，避免 Railway 网络限制"""
+    try:
+        import httpx
+
+        # 方式1：头条热搜（最可靠）
+        try:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://www.toutiao.com/hot-event/hot-board/?origin=hot_board",
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
+                        "Accept": "application/json, text/plain, */*",
+                        "Accept-Language": "zh-CN,zh;q=0.9",
+                        "Referer": "https://www.toutiao.com/",
+                    }
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    items = data.get("data", []) or []
+                    if items:
+                        topics = []
+                        for i, item in enumerate(items[:20]):
+                            title = item.get("Title", "") or item.get("word", "") or ""
+                            if title:
+                                topics.append({
+                                    "rank": i + 1,
+                                    "title": title,
+                                    "source": "toutiao",
+                                    "hot_value": str(item.get("HotValue", "")),
+                                    "url": item.get("Url", "") or f"https://so.toutiao.com/search?keyword={title}",
+                                })
+                        return {"success": True, "topics": topics, "source": "toutiao"}
+        except Exception as e:
+            print(f"[direct-trending] Toutiao failed: {e}")
+
+        # 方式2：微博热搜
+        try:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://weibo.com/ajax/side/hotSearch",
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+                        "Accept": "application/json, text/plain, */*",
+                        "Referer": "https://weibo.com/",
+                    }
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    realtime = data.get("data", {}).get("realtime", [])
+                    if realtime:
+                        topics = []
+                        for i, item in enumerate(realtime[:20]):
+                            word = item.get("word", "")
+                            if word:
+                                encoded = word.replace("#", "%23")
+                                topics.append({
+                                    "rank": i + 1,
+                                    "title": word,
+                                    "source": "weibo",
+                                    "hot_value": str(item.get("num", "")),
+                                    "url": f"https://s.weibo.com/weibo?q={encoded}",
+                                })
+                        return {"success": True, "topics": topics, "source": "weibo"}
+        except Exception as e:
+            print(f"[direct-trending] Weibo failed: {e}")
+
+        return {"success": True, "topics": [], "source": "none"}
+    except Exception as e:
+        return {"success": False, "topics": [], "error": str(e)}
 
 @app.post("/api/hotspot/analyze")
 async def analyze_hotspot(request: HotspotAnalysisRequest):
@@ -747,7 +834,7 @@ async def fate_dialogue(request: FateDialogueRequest):
                 role = "求测者" if msg.get("role") == "user" else "通灵大师"
                 history_context += f"{role}：{msg.get('content', '')}\n"
 
-        today_info = request.today_date or datetime.now().strftime("%Y年%m月%d日")
+        today_info = request.today_date or datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
         shichen_info = request.shichen or shichen
 
         system_prompt = f"""你是一位修行千年的通灵命理大师，说话风格像老朋友聊天，风趣幽默接地气，不装神秘不说废话。

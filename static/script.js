@@ -405,26 +405,38 @@ async function loadHotspots() {
             <span>命理师解读中...</span>
         </div>`;
 
+    let topics = [];
+
+    // 优先尝试直连 API（绕过 Railway 出站限制）
     try {
-        const res = await fetch('/api/trending?source=weibo&limit=20');
+        const res = await fetch('/api/trending/direct');
         const data = await res.json();
-        const topics = data.topics || [];
-
-        if (!topics.length) {
-            list.innerHTML = '<div class="loading-indicator"><span>暂无数据</span></div>';
-            return;
+        if (data.success && data.topics && data.topics.length) {
+            topics = data.topics;
         }
+    } catch (e) {}
 
-        // 保存到state，供命运联动使用
-        state.hotTopics = topics;
-
-        // 并行：渲染热点列表 + 调用命运联动API
-        renderHotspotList(topics);
-        loadFateImpact(topics);
-        loadFortuneTrend();
-    } catch (e) {
-        list.innerHTML = '<div class="loading-indicator"><span>加载失败，请刷新重试</span></div>';
+    // 如果直连失败，尝试原 API
+    if (!topics.length) {
+        try {
+            const res = await fetch('/api/trending?source=baidu&limit=20');
+            const data = await res.json();
+            topics = data.topics || [];
+        } catch (e) {}
     }
+
+    if (!topics.length) {
+        list.innerHTML = '<div class="loading-indicator"><span>热点加载中，请稍候...</span></div>';
+        return;
+    }
+
+    // 保存到state，供命运联动使用
+    state.hotTopics = topics;
+
+    // 并行：渲染热点列表 + 调用命运联动API
+    renderHotspotList(topics);
+    loadFateImpact(topics);
+    loadFortuneTrend();
 }
 
 function renderHotspotList(topics) {
@@ -712,6 +724,23 @@ async function sendDivineMessage() {
 
     const thinkingId = appendChatMessage('✦ 命理运转中...', 'ai', true);
 
+    // 获取当前实时时间（秒级）
+    const now = new Date();
+    const currentDate = now.getFullYear() + '年' + String(now.getMonth()+1).padStart(2,'0') + '月' + String(now.getDate()).padStart(2,'0') + '日';
+    const currentTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    const currentHour = now.getHours();
+
+    // 时辰计算
+    const shichenMap = {
+        23: "子时", 0: "子时", 1: "丑时", 2: "丑时",
+        3: "寅时", 4: "寅时", 5: "卯时", 6: "卯时",
+        7: "辰时", 8: "辰时", 9: "巳时", 10: "巳时",
+        11: "午时", 12: "午时", 13: "未时", 14: "未时",
+        15: "申时", 16: "申时", 17: "酉时", 18: "酉时",
+        19: "戌时", 20: "戌时", 21: "亥时", 22: "亥时",
+    };
+    const currentShichen = shichenMap[currentHour] || "子时";
+
     try {
         const res = await fetch('/api/fate/dialogue', {
             method: 'POST',
@@ -719,8 +748,8 @@ async function sendDivineMessage() {
             body: JSON.stringify({
                 message: text,
                 conversation_history: state.divineHistory.slice(-10),
-                today_date: state.todayDate,
-                shichen: state.shichen,
+                today_date: currentDate + ' ' + currentTime,
+                shichen: currentShichen + '（' + currentTime + '）',
             }),
         });
         const data = await res.json();
@@ -1158,7 +1187,39 @@ document.addEventListener('DOMContentLoaded', () => {
     $('hotspot-modal')?.querySelector('.modal-overlay')?.addEventListener('click', closeHotspotModal);
 });
 
-// ========== Cloud Login ==========
+// ========== Logout ==========
+async function doLogout() {
+    if (!confirm('确定要退出登录吗？\n退出后本地信息将被清除。')) return;
+
+    // 清除前端 localStorage
+    localStorage.removeItem('userProfile');
+    localStorage.removeItem('cloud_token');
+    localStorage.removeItem('cloud_user_id');
+    state.userProfile = null;
+    state.divineHistory = [];
+    state.fortuneResult = null;
+
+    // 通知后端清除服务端数据
+    try {
+        await fetch('/api/profile/logout', { method: 'POST' });
+    } catch(e) {}
+
+    // 重置状态，回到设置页
+    showSetupScreen();
+    // 清空设置表单
+    var nameEl = $('user-name');
+    var bdEl = $('user-birthday');
+    var timeEl = $('user-time');
+    var locEl = $('user-location');
+    if (nameEl) nameEl.value = '';
+    if (bdEl) bdEl.value = '';
+    if (timeEl) timeEl.value = '00:00';
+    if (locEl) locEl.value = '';
+    // 重置性别按钮
+    document.querySelectorAll('.gender-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+}
 let loginMode = 'login'; // 'login' | 'register'
 
 function showCloudLogin() {
