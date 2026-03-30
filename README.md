@@ -1,118 +1,87 @@
-# 日常AI服务 ✨
+# 玄学互动平台 ✨
 
-一套实用的日常AI服务应用，包含Web版本和Flutter跨平台APP版本！
+AI命理大师 · 热点命运联动 · 择机而行
 
-## 功能特性
+## 核心功能
 
-- 📕 **小红书文案生成器** - 一键生成吸引人的小红书风格文案
-- 💬 **智能回怼助手** - 高情商回怼话术，让你再也不怕尴尬场景
-- 🔮 **AI算命** - 趣味命理解读，娱乐至上
-
-## 项目结构
-
-```
-daily-ai-services/          # Web版本和后端API
-daily-ai-services-flutter/  # Flutter APP版本（iOS/Android）
-```
-
-## 快速开始 - Web版本
-
-### 1. 安装依赖
-
-```bash
-cd daily-ai-services
-pip install -r requirements.txt
-```
-
-### 2. 配置环境变量
-
-```bash
-cp .env.example .env
-# 编辑.env文件，填入你的Anthropic API密钥
-```
-
-### 3. 启动服务
-
-```bash
-python -m uvicorn main:app --reload
-```
-
-### 4. 访问应用
-
-打开浏览器访问：http://localhost:8000
-
-## 快速开始 - Flutter APP版本
-
-### 1. 安装Flutter
-
-首先需要安装Flutter SDK：https://flutter.dev/docs/get-started/install
-
-### 2. 安装依赖
-
-```bash
-cd daily-ai-services-flutter
-flutter pub get
-```
-
-### 3. 配置环境变量
-
-```bash
-cp assets/.env.example assets/.env
-# 编辑assets/.env文件，配置API地址
-```
-
-**注意**：Flutter APP需要先启动后端API服务！
-
-### 4. 运行APP
-
-```bash
-# Android
-flutter run
-
-# iOS (需要Mac)
-flutter run -d ios
-```
+- 🔮 **命运水晶球** - 基于八字命理的AI专属运势解读
+- 📰 **热点命运联动** - 自动分析今日热点与您命格的关联（首创功能！）
+- ⏱ **预测未来** - 从玄学视角预测热点事件的明日走向
+- ⚖️ **择机而行** - 根据命盘判断当前时机是否适合重大决策
+- ☯ **双人合盘** - AI合盘分析两人命理契合度
+- 💬 **占卜大师** - AI驱动的通灵命理对话
+- 🔥 **每日热点** - 微博实时热点 + 个性化命理解读
 
 ## 技术栈
 
-### Web版本
 - **后端**: FastAPI + Python 3.12+
-- **AI**: Anthropic Claude API
-- **前端**: 原生 HTML/CSS/JavaScript
+- **AI**: Anthropic Claude / OpenAI 兼容 API（火山引擎 MiniMax 等）
+- **前端**: PWA（可安装到手机桌面）
+- **部署**: Railway（一键部署，自动 HTTPS）
 
-### Flutter APP版本
-- **框架**: Flutter 3.x
-- **语言**: Dart
-- **支持平台**: iOS、Android
+## 本地运行
 
-## 赚钱思路
+```bash
+pip install -r requirements.txt
+cp .env.example .env   # 填入 AI API Key
+python main.py
+# 访问 http://localhost:8000
+```
 
-### 1. 免费增值模式 (Freemium) 🔥推荐
-- **基础版**: 每个功能每天免费使用3次
-- **会员版**: ¥9.9/月 无限使用，优先响应，更多高级选项
+## Railway 部署（5分钟上线）
 
-### 2. 按次付费
-- 每次使用0.1-0.5元
-- 适合低频用户
+### 步骤 1：上传到 GitHub
 
-### 3. API服务
-- 提供RESTful API
-- ¥0.1-0.5/次调用
-- 批量购买优惠
+代码已推送至：https://github.com/YesIamGodt/xuanxue-app
 
-### 4. 定制服务
-- 为企业或个人定制专属的AI工具
-- 一次性开发费 ¥5000-50000
-- 年维护费 15-20%
+### 步骤 2：Railway 部署
 
-## 扩展功能建议
+1. 访问 https://railway.app 并登录（用 GitHub 账号）
+2. 点击 **New Project** → **Deploy from GitHub repo**
+3. 选择仓库：`YesIamGodt/xuanxue-app`
+4. Railway 会自动检测 Python 并部署
 
-- 添加更多AI服务（如：情书生成、检讨书、祝福语等）
-- 用户系统和历史记录
-- 分享功能，一键分享到社交平台
-- 支持自定义Prompt模板
-- 图片生成能力（集成DALL-E、Midjourney等）
+### 步骤 3：设置环境变量
+
+在 Railway 项目 Settings → Variables 中添加：
+
+```
+AI_PROVIDER=anthropic          # 或 openai / custom
+ANTHROPIC_API_KEY=sk-ant-xxxxx  # 填入你的 Key
+MAX_TOKENS=2048
+TEMPERATURE=0.7
+```
+
+### 步骤 4：获取访问地址
+
+部署完成后，Railway 会提供 HTTPS URL，如：
+`https://xuanxue-app.up.railway.app`
+
+### 步骤 5：安装到手机
+
+在手机浏览器打开上述地址，点击浏览器菜单 → **"添加到主屏幕"**，即可像 App 一样使用！
+
+## PWA 功能
+
+- ✅ Service Worker 离线缓存
+- ✅ App Icons（48~512px）
+- ✅ Manifest 配置
+- ✅ 安装提示条
+- ✅ 全屏独立运行
+
+## 环境变量说明
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `AI_PROVIDER` | AI 提供商：anthropic/openai/custom | anthropic |
+| `ANTHROPIC_API_KEY` | Claude API Key | - |
+| `OPENAI_API_KEY` | OpenAI API Key | - |
+| `CUSTOM_API_URL` | 自定义 API（火山引擎等） | - |
+| `CUSTOM_API_KEY` | 自定义 API Key | - |
+| `CUSTOM_MODEL` | 自定义模型名 | - |
+| `MAX_TOKENS` | 最大 Token 数 | 2048 |
+| `TEMPERATURE` | AI 温度参数 | 0.7 |
 
 ## 免责声明
 
-本项目仅供学习和娱乐使用。AI算命功能纯属娱乐，请勿当真。使用本项目产生的任何后果由使用者自行承担。
+本项目仅供娱乐使用。AI 命理分析仅供参考，请勿当真。
