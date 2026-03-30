@@ -1,8 +1,10 @@
 {
   "$schema": "https://railway.app/schema.json",
   "build": {
-    "builder": "PYTHON",
-    "pythonVersion": "3.12"
+    "builder": "NIXPACKS",
+    "nixpacks": {
+      "PYTHON_VERSION": "3.12"
+    }
   },
   "deploy": {
     "numInstances": 1,
