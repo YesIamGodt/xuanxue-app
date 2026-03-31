@@ -132,13 +132,10 @@ dist_dir = os.path.join(os.path.dirname(__file__), "dist")
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 web_dir = dist_dir if os.path.exists(dist_dir) else static_dir
 
-if os.path.exists(web_dir):
-    # 挂载 /static 路径（兼容 dist/ 和 static/ 目录结构）
-    app.mount("/static", StaticFiles(directory=web_dir), name="static")
-    # 挂载 /assets 路径（Vite 构建后的 hash 资源）
-    assets_dir = os.path.join(web_dir, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+# 挂载 /assets 路径（Vite 构建后的 hash 资源）
+assets_dir = os.path.join(web_dir, "assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 def root():

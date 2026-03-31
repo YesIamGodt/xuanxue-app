@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    base: '/static/',
+    base: '/',
     // 资源内联/复制配置
     assetsDir: 'assets',
     // 不破坏相对路径

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6B21A8">
+    <meta name="description" content="AI命理大师 · 热点命运联动 · 择机而行">
+    <link rel="icon" type="image/png" href="/assets/icon-192-DX7qXguV.png">
+    <link rel="apple-touch-icon" href="/assets/icon-192-DX7qXguV.png">
+    <title>玄学互动</title>
+    <link rel="manifest" href="/assets/manifest-DHCYk9FD.json">  <script type="module" crossorigin src="/assets/main-DrAKBdKT.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-DrrhyhEm.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+
+        <!-- PWA 安装提示条 -->
+        <div id="pwa-install-banner" class="pwa-banner" style="display:none">
+            <span class="pwa-banner-icon">📱</span>
+            <span class="pwa-banner-text">添加到桌面，更快访问</span>
+            <button class="pwa-install-btn" id="pwa-install-btn">安装</button>
+            <button class="pwa-dismiss-btn" onclick="dismissPwaBanner()">×</button>
+        </div>
+
+        <!-- 启动页 -->
+        <div id="splash-screen" class="splash-screen">
+            <div class="splash-content">
+                <div class="taiji-symbol"></div>
+                <h1 class="splash-title">玄学互动</h1>
+                <p class="splash-subtitle">探索命运，发现自我</p>
+            </div>
+        </div>
+
+        <!-- 用户设置页面 -->
+        <div id="setup-screen" class="screen" style="display:none">
+            <div class="setup-header">
+                <div class="bagua-icon">☰</div>
+                <h2 class="screen-title">命运降临</h2>
+                <p class="screen-subtitle">请输入您的生辰，开启命理之旅</p>
+            </div>
+            <div class="form-container">
+                <div class="form-group">
+                    <label class="form-label">姓名</label>
+                    <input type="text" id="user-name" class="form-input" placeholder="请输入您的姓名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">性别</label>
+                    <div class="gender-selector">
+                        <button class="gender-btn" data-gender="男">♂ 男</button>
+                        <button class="gender-btn" data-gender="女">♀ 女</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">出生日期</label>
+                    <input type="date" id="user-birthday" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">出生时辰</label>
+                    <input type="time" id="user-time" class="form-input" value="00:00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">出生地</label>
+                    <input type="text" id="user-location" class="form-input" placeholder="例如：北京市">
+                </div>
+                <button id="setup-btn" class="btn btn-primary btn-full" onclick="saveUserProfile()">
+                    ✨ 开启命理之旅
+                </button>
+            </div>
+        </div>
+
+        <!-- 欢迎卦屏（注册后立即展示） -->
+        <div id="welcome-card" class="screen" style="display:none">
+            <div class="welcome-card-wrap">
+                <div class="welcome-temple">
+                    <div class="welcome-avatar">🔮</div>
+                    <p class="welcome-subtitle">命盘已锁定，卦象已显现</p>
+                </div>
+                <div class="welcome-divine-card" id="welcome-divine-card">
+                    <div class="wdc-loading">
+                        <div class="loading-spinner large"></div>
+                        <p>命盘运转中...</p>
+                        <p class="wdc-hint">大师正在解读您的命格</p>
+                    </div>
+                </div>
+                <div class="welcome-footer" id="welcome-footer" style="display:none">
+                    <p class="welcome-tip">以上是您今日专属卦象，稍后可在「占卜」中查看详细</p>
+                    <button class="btn btn-primary btn-full" id="welcome-enter-btn" onclick="enterMainFromWelcome()">
+                        ☯ 开启命理之旅
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主页面 -->
+        <div id="main-screen" class="screen" style="display:none">
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-tab="trending">
+                    <span class="nav-icon">🔥</span>
+                    <span class="nav-label">热点</span>
+                </button>
+                <button class="nav-item" data-tab="divine">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">大师</span>
+                </button>
+                <button class="nav-item" data-tab="hepan">
+                    <span class="nav-icon">☯</span>
+                    <span class="nav-label">合盘</span>
+                </button>
+                <button class="nav-item" data-tab="crystal">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-label">占卜</span>
+                </button>
+                <button class="nav-item" data-tab="profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">我的</span>
+                </button>
+            </nav>
+
+            <div class="content-area">
+
+                <!-- 热点页 -->
+                <div id="tab-trending" class="tab-content active">
+                    <!-- 今日运势 Banner -->
+                    <div class="fortune-banner" id="fortune-banner">
+                        <div class="fb-header">
+                            <div class="fb-greeting">
+                                <span class="fb-hello" id="fb-hello">大师有礼</span>
+                                <span class="fb-name" id="fb-name"></span>
+                            </div>
+                            <div class="fb-level-badge" id="fb-level-badge"></div>
+                        </div>
+                        <div class="fb-divine-text" id="fb-divine-text">
+                            <div class="fb-loading">
+                                <div class="loading-spinner small"></div>
+                                <span>命盘运转中...</span>
+                            </div>
+                        </div>
+                        <div class="fb-meta" id="fb-meta" style="display:none">
+                            <span class="fb-tag" id="fb-dir"></span>
+                            <span class="fb-tag" id="fb-color"></span>
+                            <span class="fb-tag" id="fb-num"></span>
+                        </div>
+                        <!-- 运势趋势线 -->
+                        <div class="fortune-trend-bar" id="fortune-trend-bar" style="display:none">
+                            <span class="trend-arrow" id="trend-arrow"></span>
+                            <span class="trend-msg" id="trend-msg"></span>
+                            <button class="timing-btn" id="timing-btn" onclick="openTimingAdvisor()">择机而行</button>
+                        </div>
+                        <div class="fb-cta" onclick="switchTab('crystal')">
+                            <span>查看完整运势</span>
+                            <span>✦</span>
+                        </div>
+                    </div>
+
+                    <!-- 命运热点关联卡 -->
+                    <div class="fate-impact-section" id="fate-impact-section" style="display:none">
+                        <div class="fate-impact-header">
+                            <span class="fate-impact-icon">🎯</span>
+                            <span class="fate-impact-title">与你的命格最相关的热点</span>
+                        </div>
+                        <div class="fate-impact-list" id="fate-impact-list"></div>
+                    </div>
+
+                    <div class="page-header">
+                        <h1 class="page-title">每日热点</h1>
+                        <p class="page-desc">洞悉天机，探索热点与命运的关联</p>
+                    </div>
+                    <div class="hotspot-list" id="hotspot-list">
+                        <div class="loading-indicator">
+                            <div class="loading-spinner"></div>
+                            <span>命理师解读中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 占卜大师对话页 -->
+                <div id="tab-divine" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">通灵大师</h1>
+                        <p class="page-desc">命理师已就位，请述说您的疑惑</p>
+                    </div>
+                    <div class="chat-container" id="divine-chat">
+                        <div class="chat-welcome" id="divine-welcome">
+                            <div class="divine-avatar">🔮</div>
+                            <div class="welcome-message">
+                                <p>善哉，缘分已至。</p>
+                                <p>我是通灵大师，已根据您的八字洞察命数。请告诉我您心中的疑惑，我将为您指点迷津。</p>
+                                <p class="hint">💡 可询问：事业财运、感情姻缘、健康运势、今日决策等</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="divine-input" class="chat-input" placeholder="请述说您的疑惑...">
+                        <button id="divine-send-btn" class="chat-send-btn">✦</button>
+                    </div>
+                </div>
+
+                <!-- 双人合盘页 -->
+                <div id="tab-hepan" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">命缘合盘</h1>
+                        <p class="page-desc">合八字，探姻缘，知两人命数缘深</p>
+                    </div>
+
+                    <div class="hepan-form" id="hepan-form">
+                        <div class="hepan-person" id="hepan-person1">
+                            <div class="hepan-person-title">☯ 甲&nbsp;&nbsp;方</div>
+                            <div class="form-group">
+                                <label class="form-label">姓名</label>
+                                <input type="text" id="hepan-name1" class="form-input" placeholder="你的姓名">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">性别</label>
+                                <div class="gender-selector hepan-gender">
+                                    <button class="gender-btn active" data-gender="男" data-person="1">♂ 男</button>
+                                    <button class="gender-btn" data-gender="女" data-person="1">♀ 女</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">出生日期</label>
+                                <input type="date" id="hepan-birthday1" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">出生时辰</label>
+                                <input type="time" id="hepan-time1" class="form-input" value="00:00">
+                            </div>
+                        </div>
+
+                        <div class="hepan-divider">
+                            <div class="hepan-heart">☯</div>
+                            <div class="hepan-heart-line"></div>
+                        </div>
+
+                        <div class="hepan-person" id="hepan-person2">
+                            <div class="hepan-person-title">☯ 乙&nbsp;&nbsp;方</div>
+                            <div class="form-group">
+                                <label class="form-label">姓名</label>
+                                <input type="text" id="hepan-name2" class="form-input" placeholder="对方的姓名">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">性别</label>
+                                <div class="gender-selector hepan-gender">
+                                    <button class="gender-btn active" data-gender="男" data-person="2">♂ 男</button>
+                                    <button class="gender-btn" data-gender="女" data-person="2">♀ 女</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">出生日期</label>
+                                <input type="date" id="hepan-birthday2" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">出生时辰</label>
+                                <input type="time" id="hepan-time2" class="form-input" value="00:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" id="hepan-submit-btn" onclick="doHepan()">
+                        ☯ 开始合盘
+                    </button>
+
+                    <!-- 合盘结果 -->
+                    <div class="hepan-result" id="hepan-result" style="display:none">
+                        <div class="hepan-level-badge" id="hepan-level"></div>
+                        <div class="hepan-summary" id="hepan-summary"></div>
+                        <div class="hepan-cards">
+                            <div class="hepan-card">
+                                <div class="hepan-card-title" id="hepan-p1-title"></div>
+                                <div class="hepan-card-bazi" id="hepan-p1-bazi"></div>
+                            </div>
+                            <div class="hepan-card">
+                                <div class="hepan-card-title" id="hepan-p2-title"></div>
+                                <div class="hepan-card-bazi" id="hepan-p2-bazi"></div>
+                            </div>
+                        </div>
+                        <div class="hepan-analysis" id="hepan-analysis"></div>
+                    </div>
+                </div>
+
+                <!-- 命运水晶球页 -->
+                <div id="tab-crystal" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">命运占卜</h1>
+                        <p class="page-desc">点击水晶球，获取今日专属运势</p>
+                    </div>
+
+                    <div class="crystal-section">
+                        <!-- 水晶球 -->
+                        <div class="crystal-ball-container" id="crystal-container">
+                            <div class="crystal-ball" id="crystal-ball">
+                                <div class="crystal-inner-glow"></div>
+                                <div class="crystal-rays">
+                                    <div class="ray"></div><div class="ray"></div>
+                                    <div class="ray"></div><div class="ray"></div>
+                                    <div class="ray"></div><div class="ray"></div>
+                                </div>
+                                <div class="crystal-symbol">☽</div>
+                            </div>
+                            <p class="crystal-hint" id="crystal-hint">点击水晶球，占卜今日运势</p>
+                        </div>
+
+                        <!-- 加载中 -->
+                        <div class="crystal-loading" id="crystal-loading" style="display:none">
+                            <div class="crystal-ball spinning">
+                                <div class="crystal-inner-glow"></div>
+                                <div class="crystal-rays spinning-rays">
+                                    <div class="ray"></div><div class="ray"></div>
+                                    <div class="ray"></div><div class="ray"></div>
+                                    <div class="ray"></div><div class="ray"></div>
+                                </div>
+                            </div>
+                            <p class="loading-text">命盘运转中...</p>
+                        </div>
+
+                        <!-- 运势结果 -->
+                        <div class="fortune-result" id="fortune-result" style="display:none">
+                            <div class="fortune-level" id="fortune-level">吉</div>
+                            <div class="fortune-date" id="fortune-date"></div>
+                            <div class="bazi-brief" id="bazi-brief"></div>
+
+                            <div class="fortune-cards">
+                                <div class="fortune-card">
+                                    <div class="card-icon">🌟</div>
+                                    <div class="card-label">年运</div>
+                                    <div class="card-text" id="year-fortune"></div>
+                                </div>
+                                <div class="fortune-card">
+                                    <div class="card-icon">🌙</div>
+                                    <div class="card-label">月运</div>
+                                    <div class="card-text" id="month-fortune"></div>
+                                </div>
+                                <div class="fortune-card highlight">
+                                    <div class="card-icon">☀️</div>
+                                    <div class="card-label">日运</div>
+                                    <div class="card-text" id="day-fortune"></div>
+                                </div>
+                            </div>
+
+                            <div class="fortune-meta">
+                                <div class="meta-item">
+                                    <span class="meta-icon">🧭</span>
+                                    <span class="meta-label">吉位</span>
+                                    <span class="meta-value" id="lucky-directions"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">🎨</span>
+                                    <span class="meta-label">幸运色</span>
+                                    <span class="meta-value" id="lucky-color"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">🔢</span>
+                                    <span class="meta-label">幸运数</span>
+                                    <span class="meta-value" id="lucky-number"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">💚</span>
+                                    <span class="meta-label">养生</span>
+                                    <span class="meta-value" id="health-advice"></span>
+                                </div>
+                            </div>
+
+                            <div class="question-answer" id="question-answer-block" style="display:none">
+                                <h3 class="qa-title">🔮 大师解答</h3>
+                                <div class="qa-text" id="qa-text"></div>
+                            </div>
+
+                            <div class="re-divine-area">
+                                <input type="text" id="divine-question-input" class="form-input" placeholder="可同时默念一个问题（可选）">
+                                <button class="btn btn-secondary btn-full" id="re-divine-btn">✦ 再占一卦</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 历史记录 -->
+                    <div class="history-section">
+                        <h3 class="section-title">📜 占卜记录</h3>
+                        <div class="history-list" id="history-list">
+                            <div class="loading-indicator" id="history-loading">
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 我的页 -->
+                <div id="tab-profile" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">我的命盘</h1>
+                        <p class="page-desc">您的玄学画像</p>
+                    </div>
+                    <div class="profile-container" id="profile-container">
+
+                        <!-- 云端登录区 -->
+                        <div class="cloud-login-section" id="cloud-login-section">
+                            <div class="cloud-login-card">
+                                <div class="cloud-login-icon">☁️</div>
+                                <div class="cloud-login-text">
+                                    <p class="cloud-login-title">云端同步</p>
+                                    <p class="cloud-login-desc">登录后您的命盘和占卜记录将在云端永久保存</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-full" id="cloud-login-btn" onclick="showCloudLogin()">
+                                🔐 登录 / 注册
+                            </button>
+                        </div>
+
+                        <!-- 登录弹窗 -->
+                        <div class="cloud-login-modal" id="cloud-login-modal" style="display:none">
+                            <div class="cloud-modal-overlay" onclick="closeCloudLogin()"></div>
+                            <div class="cloud-modal-content">
+                                <div class="cloud-modal-header">
+                                    <h3>云端同步</h3>
+                                    <button onclick="closeCloudLogin()">×</button>
+                                </div>
+                                <div class="cloud-modal-body">
+                                    <div class="form-group">
+                                        <label class="form-label">邮箱</label>
+                                        <input type="email" id="login-email" class="form-input" placeholder="your@email.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">密码</label>
+                                        <input type="password" id="login-password" class="form-input" placeholder="密码（至少6位）">
+                                    </div>
+                                    <div id="login-error" class="login-error" style="display:none"></div>
+                                    <button class="btn btn-primary btn-full" id="login-submit-btn" onclick="doCloudLogin()">
+                                        登录
+                                    </button>
+                                    <div class="login-register-toggle">
+                                        没有账号？<a href="#" onclick="toggleLoginMode(event)">立即注册</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-card">
+                            <div class="profile-avatar">☰</div>
+                            <div class="profile-info" id="profile-info"></div>
+                        </div>
+                        <button id="edit-profile-btn" class="btn btn-secondary btn-full">
+                            ✏️ 修改信息
+                        </button>
+                        <button id="logout-btn" class="btn btn-outline btn-full" style="margin-top:8px; border-color:#6b7280; color:#9ca3af;" onclick="doLogout()">
+                            🚪 退出登录
+                        </button>
+                        <div class="info-section">
+                            <h3 class="section-title">关于应用</h3>
+                            <p class="info-text">玄学互动平台 v2.0</p>
+                            <p class="info-text">命由天定，运由己造</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 热点详情弹窗 -->
+        <div id="hotspot-modal" class="modal" style="display:none">
+            <div class="modal-overlay" onclick="closeHotspotModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title" class="modal-title">热点标题</h2>
+                    <button class="modal-close" onclick="closeHotspotModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="hotspot-detail" id="hotspot-detail"></div>
+                    <div class="content-summary" id="content-summary">
+                        <div class="loading-spinner small"></div>
+                        <span>正在获取内容摘要...</span>
+                    </div>
+                    <div class="analysis-section">
+                        <h3 class="analysis-title">🔮 与你的关联</h3>
+                        <div class="analysis-content" id="hotspot-analysis">
+                            <div class="loading-spinner small"></div>
+                            <span>命理师解读中...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="hotspot-footer">
+                    <button class="btn btn-secondary" id="btn-predict-future" onclick="doPredictFuture()">⏱ 预测未来</button>
+                    <button class="btn btn-primary" onclick="closeHotspotModal()">知道了</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 择机而行弹窗 -->
+        <div id="timing-modal" class="modal" style="display:none">
+            <div class="modal-overlay" onclick="closeTimingModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">⏱ 择机而行</h2>
+                    <button class="modal-close" onclick="closeTimingModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p class="timing-hint">输入您想做的事情，大师帮您判断时机是否成熟</p>
+                    <textarea id="timing-question" class="form-input" rows="3" placeholder="例如：我想跳槽 / 我想表白 / 我想投资理财..."></textarea>
+                    <button class="btn btn-primary btn-full" style="margin-top:12px" onclick="doTimingAdvice()">
+                        🔮 询问时机
+                    </button>
+                    <div class="timing-result" id="timing-result" style="display:none;margin-top:16px"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+    // ========== PWA Service Worker & Install ==========
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(function(reg) { console.log('[SW] Registered'); })
+                .catch(function(err) { console.warn('[SW] Failed:', err); });
+        });
+    }
+
+    // PWA 安装提示
+    var deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        // 检查是否已安装（显示过则不再显示）
+        if (!localStorage.getItem('pwa-banner-dismissed')) {
+            var banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.style.display = 'flex';
+        }
+    });
+
+    document.getElementById('pwa-install-btn').addEventListener('click', function() {
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function(choice) {
+                if (choice.outcome === 'accepted') {
+                    console.log('[PWA] User accepted install');
+                }
+                deferredPrompt = null;
+            });
+        }
+    });
+
+    function dismissPwaBanner() {
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        localStorage.setItem('pwa-banner-dismissed', '1');
+    }
+
+    window.addEventListener('appinstalled', function() {
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        deferredPrompt = null;
+        console.log('[PWA] Installed!');
+    });
+    </script>
+</body>
+</html>
