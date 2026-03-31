@@ -1,0 +1,21 @@
+{
+  "name": "xuanxue-app",
+  "version": "1.0.0",
+  "description": "玄学互动平台 - AI命理大师",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "android:init": "npm run build && npx cap add android && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/status-bar": "^6.0.2",
+    "typescript": "^6.0.2",
+    "vite": "^5.4.0"
+  }
+}

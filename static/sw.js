@@ -1,17 +1,17 @@
 // 玄学互动平台 Service Worker
-const CACHE_NAME = 'xuanxue-v3';
+const CACHE_NAME = 'xuanxue-v4';
 const STATIC_ASSETS = [
   '/',
-  '/static/index.html',
-  '/static/style.css',
-  '/static/script.js',
-  '/static/manifest.json',
-  '/static/icon-48.png',
-  '/static/icon-72.png',
-  '/static/icon-96.png',
-  '/static/icon-144.png',
-  '/static/icon-192.png',
-  '/static/icon-512.png',
+  './index.html',
+  './style.css',
+  './script.js',
+  './manifest.json',
+  './icon-48.png',
+  './icon-72.png',
+  './icon-96.png',
+  './icon-144.png',
+  './icon-192.png',
+  './icon-512.png',
 ];
 
 // 安装：缓存静态资源

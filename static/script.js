@@ -19,6 +19,68 @@ const state = {
     bannerLoaded: false, // 防止 banner 重复加载
 };
 
+// ========== PWA / Service Worker ==========
+var deferredPrompt = null;
+
+// 注册 Service Worker（PWA 离线能力 + 可安装）
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').then(function(reg) {
+            console.log('[PWA] Service Worker registered:', reg.scope);
+        }).catch(function(err) {
+            console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    });
+
+    // 监听可安装事件
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        // 显示安装提示条
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) {
+            banner.style.display = 'flex';
+        }
+    });
+
+    // App 已安装
+    window.addEventListener('appinstalled', function() {
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        deferredPrompt = null;
+        // 提示用户
+        setTimeout(function() {
+            alert('✨ 玄学互动已安装到您的设备！\n在桌面或应用列表中找到「玄学互动」即可打开。');
+        }, 500);
+    });
+}
+
+function doPwaInstall() {
+    if (!deferredPrompt) {
+        // 如果没有 deferredPrompt，提示用户在浏览器菜单手动安装
+        alert('请点击浏览器菜单（⋮ 或 ≡）\n选择「添加到主屏幕」或「安装」');
+        return;
+    }
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(choice) {
+        if (choice.outcome === 'accepted') {
+            console.log('[PWA] User accepted install');
+        } else {
+            console.log('[PWA] User dismissed install');
+        }
+        deferredPrompt = null;
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+    });
+}
+
+function dismissPwaBanner() {
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+    // 记住用户不喜欢提示（本次会话不再显示）
+    sessionStorage.setItem('pwa_banner_dismissed', '1');
+}
+
 // ========== Utilities ==========
 function $(id) { return document.getElementById(id); }
 function escapeHtml(text) {

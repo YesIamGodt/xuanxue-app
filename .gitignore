@@ -34,7 +34,6 @@ debug_*.png
 data/
 .do
 fix_hepan.py
-test_*.py
 debug_banner.png
 playwright_*.png
 test_layout.py
@@ -51,3 +50,10 @@ start_server.py
 start.bat
 .hepan.py.swp
 .claude/
+# Capacitor build artifacts
+node_modules/
+android/
+ios/
+*.keystore
+*.jks
+
