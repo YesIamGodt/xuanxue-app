@@ -9,9 +9,7 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
   },
   server: {
-    // 连接到 Railway 上的后端 API
-    url: 'https://xuanxue-app-production.up.railway.app',
-    androidScheme: 'https',
+    // Android 使用本地打包资源，不从远程加载
   },
   plugins: {
     StatusBar: {

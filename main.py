@@ -127,13 +127,26 @@ class DivinationRecordRequest(BaseModel):
 
 
 # 挂载静态文件（用于Web版本）
+# 优先使用 dist/（Vite构建产物），fallback 到 static/（开发版）
+dist_dir = os.path.join(os.path.dirname(__file__), "dist")
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+web_dir = dist_dir if os.path.exists(dist_dir) else static_dir
+
+if os.path.exists(web_dir):
+    # 挂载 /static 路径（兼容 dist/ 和 static/ 目录结构）
+    app.mount("/static", StaticFiles(directory=web_dir), name="static")
+    # 挂载 /assets 路径（Vite 构建后的 hash 资源）
+    assets_dir = os.path.join(web_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 def root():
     """返回主页面"""
+    # 优先返回 dist/index.html（Vite 构建产物），fallback 到 static/index.html
+    dist_index = os.path.join(dist_dir, "index.html") if os.path.exists(dist_dir) else None
+    if dist_index and os.path.exists(dist_index):
+        return FileResponse(dist_index)
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
