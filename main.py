@@ -296,73 +296,105 @@ def get_trending_categories():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+async def _fetch_toutiao():
+    """获取头条热搜"""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+            resp = await client.get(
+                "https://www.toutiao.com/hot-event/hot-board/?origin=hot_board",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
+                    "Accept": "application/json, text/plain, */*",
+                    "Accept-Language": "zh-CN,zh;q=0.9",
+                    "Referer": "https://www.toutiao.com/",
+                }
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                items = data.get("data", []) or []
+                if items:
+                    topics = []
+                    for i, item in enumerate(items[:20]):
+                        title = item.get("Title", "") or item.get("word", "") or ""
+                        if title:
+                            topics.append({
+                                "rank": i + 1,
+                                "title": title,
+                                "source": "toutiao",
+                                "hot_value": str(item.get("HotValue", "")),
+                                "url": item.get("Url", "") or f"https://so.toutiao.com/search?keyword={title}",
+                            })
+                    return {"topics": topics, "source": "toutiao"}
+    except Exception:
+        pass
+    return None
+
+async def _fetch_weibo():
+    """获取微博热搜"""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+            resp = await client.get(
+                "https://weibo.com/ajax/side/hotSearch",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+                    "Accept": "application/json, text/plain, */*",
+                    "Referer": "https://weibo.com/",
+                }
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                realtime = data.get("data", {}).get("realtime", [])
+                if realtime:
+                    topics = []
+                    for i, item in enumerate(realtime[:20]):
+                        word = item.get("word", "")
+                        if word:
+                            encoded = word.replace("#", "%23")
+                            topics.append({
+                                "rank": i + 1,
+                                "title": word,
+                                "source": "weibo",
+                                "hot_value": str(item.get("num", "")),
+                                "url": f"https://s.weibo.com/weibo?q={encoded}",
+                            })
+                    return {"topics": topics, "source": "weibo"}
+    except Exception:
+        pass
+    return None
+
 @app.get("/api/trending/direct")
 async def get_trending_direct():
-    """直接代理热点API，从后端转发第三方数据，避免 Railway 网络限制"""
+    """并行请求多个热搜源，谁先成功返回谁，最多等6秒"""
     try:
         import httpx
 
-        # 方式1：头条热搜（最可靠）
-        try:
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                resp = await client.get(
-                    "https://www.toutiao.com/hot-event/hot-board/?origin=hot_board",
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
-                        "Accept": "application/json, text/plain, */*",
-                        "Accept-Language": "zh-CN,zh;q=0.9",
-                        "Referer": "https://www.toutiao.com/",
-                    }
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    items = data.get("data", []) or []
-                    if items:
-                        topics = []
-                        for i, item in enumerate(items[:20]):
-                            title = item.get("Title", "") or item.get("word", "") or ""
-                            if title:
-                                topics.append({
-                                    "rank": i + 1,
-                                    "title": title,
-                                    "source": "toutiao",
-                                    "hot_value": str(item.get("HotValue", "")),
-                                    "url": item.get("Url", "") or f"https://so.toutiao.com/search?keyword={title}",
-                                })
-                        return {"success": True, "topics": topics, "source": "toutiao"}
-        except Exception as e:
-            print(f"[direct-trending] Toutiao failed: {e}")
+        # 并行请求，头条+微博同时抓
+        toutiao_task = asyncio.create_task(_fetch_toutiao())
+        weibo_task = asyncio.create_task(_fetch_weibo())
 
-        # 方式2：微博热搜
-        try:
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                resp = await client.get(
-                    "https://weibo.com/ajax/side/hotSearch",
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
-                        "Accept": "application/json, text/plain, */*",
-                        "Referer": "https://weibo.com/",
-                    }
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    realtime = data.get("data", {}).get("realtime", [])
-                    if realtime:
-                        topics = []
-                        for i, item in enumerate(realtime[:20]):
-                            word = item.get("word", "")
-                            if word:
-                                encoded = word.replace("#", "%23")
-                                topics.append({
-                                    "rank": i + 1,
-                                    "title": word,
-                                    "source": "weibo",
-                                    "hot_value": str(item.get("num", "")),
-                                    "url": f"https://s.weibo.com/weibo?q={encoded}",
-                                })
-                        return {"success": True, "topics": topics, "source": "weibo"}
-        except Exception as e:
-            print(f"[direct-trending] Weibo failed: {e}")
+        # 等待最先成功的，最多等6秒
+        done, pending = await asyncio.wait(
+            [toutiao_task, weibo_task],
+            timeout=6.0,
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # 取消还没完成的
+        for t in pending:
+            t.cancel()
+
+        # 取最快的结果
+        result = None
+        for task in done:
+            r = task.result()
+            if r and r.get("topics"):
+                result = r
+                break
+
+        if result:
+            return {"success": True, **result}
 
         return {"success": True, "topics": [], "source": "none"}
     except Exception as e:
