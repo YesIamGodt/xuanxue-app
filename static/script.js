@@ -1,3 +1,4 @@
+const _b='https://xuanxue-app-production.up.railway.app';async function _t(u,o={}){const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);try{const r=await fetch(u,{...o,signal:c.signal});clearTimeout(t);return r}catch(e){clearTimeout(t);if(e.name==='AbortError')throw new Error('网络超时');throw e}};
 
 // 玄学互动平台 - 完全重构版
 
@@ -228,7 +229,7 @@ async function saveUserProfile() {
 
     // 必须 await，等后端真正保存完毕再进行占卜
     try {
-        await fetch('/api/profile/set', {
+        await _t('https://xuanxue-app-production.up.railway.app/api/profile/set', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(profile),
@@ -263,7 +264,7 @@ async function doWelcomeDivine() {
         '<button class="btn btn-secondary btn-full" style="margin-top:16px;font-size:13px" onclick="enterMainFromWelcome()">跳过，直接进入</button>';
 
     try {
-        const res = await fetch('/api/divination/daily', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/divination/daily', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: null }),
@@ -285,7 +286,7 @@ async function doWelcomeDivine() {
             (tags.length ? '<div class="wdc-tags">' + tags.map(function(t) { return '<span class="wdc-tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '');
 
         // 保存记录
-        fetch('/api/divination/record', {
+        _t('https://xuanxue-app-production.up.railway.app/api/divination/record', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -358,7 +359,7 @@ async function autoLoadFortuneBanner() {
     if (nameEl) nameEl.textContent = profile.name + '\uff0c\u5927\u5e08\u6709\u793c';
 
     try {
-        const res = await fetch('/api/divination/daily', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/divination/daily', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: null }),
@@ -471,7 +472,7 @@ async function loadHotspots() {
 
     // 优先尝试直连 API（绕过 Railway 出站限制）
     try {
-        const res = await fetch('/api/trending/direct');
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/trending/direct');
         const data = await res.json();
         if (data.success && data.topics && data.topics.length) {
             topics = data.topics;
@@ -481,7 +482,7 @@ async function loadHotspots() {
     // 如果直连失败，尝试原 API
     if (!topics.length) {
         try {
-            const res = await fetch('/api/trending?source=baidu&limit=20');
+            const res = await _t('https://xuanxue-app-production.up.railway.app/api/trending?source=baidu&limit=20');
             const data = await res.json();
             topics = data.topics || [];
         } catch (e) {}
@@ -526,7 +527,7 @@ async function loadFateImpact(topics) {
     if (!state.userProfile || !topics.length) return;
 
     try {
-        const res = await fetch('/api/fate/impact', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/fate/impact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic: '热点分析', topic_data: { topics } }),
@@ -576,7 +577,7 @@ function renderFateImpactCards(topTopics) {
 
 async function loadFortuneTrend() {
     try {
-        const res = await fetch('/api/fate/trend');
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/fate/trend');
         const data = await res.json();
         if (!data.success) return;
 
@@ -629,7 +630,7 @@ async function doTimingAdvice() {
     result.style.display = 'block';
 
     try {
-        const res = await fetch('/api/fate/timing', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/fate/timing', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: question }),
@@ -679,7 +680,7 @@ async function doPredictFuture() {
     btn.textContent = '⏱ 命运推演中...';
 
     try {
-        const res = await fetch('/api/hotspot/predict', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/hotspot/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic: title, topic_data: topic }),
@@ -718,7 +719,7 @@ async function doPredictFuture() {
 async function fetchHotspotContent(title, topic) {
     const el = $('content-summary');
     try {
-        const res = await fetch('/api/hotspot/content', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/hotspot/content', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic: title, url: topic.url || null }),
@@ -745,7 +746,7 @@ async function fetchHotspotContent(title, topic) {
 async function analyzeHotspot(title, topic) {
     const el = $('hotspot-analysis');
     try {
-        const res = await fetch('/api/hotspot/analyze', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/hotspot/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic: title, url: topic.url || null }),
@@ -804,7 +805,7 @@ async function sendDivineMessage() {
     const currentShichen = shichenMap[currentHour] || "子时";
 
     try {
-        const res = await fetch('/api/fate/dialogue', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/fate/dialogue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -901,7 +902,7 @@ async function doHepan() {
     }
 
     try {
-        var res = await fetch('/api/hepan', {
+        var res = await _t('https://xuanxue-app-production.up.railway.app/api/hepan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1037,7 +1038,7 @@ async function doCrystalDivination(userQuestion = null) {
     if (loading) loading.style.display = 'flex';
 
     try {
-        const res = await fetch('/api/divination/daily', {
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/divination/daily', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: userQuestion }),
@@ -1123,7 +1124,7 @@ async function loadHistory() {
     if (!list) return;
 
     try {
-        const res = await fetch('/api/divination/history?limit=20');
+        const res = await _t('https://xuanxue-app-production.up.railway.app/api/divination/history?limit=20');
         const data = await res.json();
         const records = data.records || [];
 
@@ -1263,7 +1264,7 @@ async function doLogout() {
 
     // 通知后端清除服务端数据
     try {
-        await fetch('/api/profile/logout', { method: 'POST' });
+        await _t('https://xuanxue-app-production.up.railway.app/api/profile/logout', { method: 'POST' });
     } catch(e) {}
 
     // 重置状态，回到设置页
